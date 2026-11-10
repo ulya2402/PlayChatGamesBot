@@ -1,5 +1,6 @@
 import { t } from '../locales.js';
 
+// === AWAL PERUBAHAN: tgcloud/lib/games/flappy.js ===
 export function getFlappyHtml(lang = 'en', botUsername = '') {
   const lblStart = t('tapToStart', lang);
   const lblPlay = t('playAgain', lang);
@@ -11,20 +12,20 @@ export function getFlappyHtml(lang = 'en', botUsername = '') {
   const lblNone = t('noRecord', lang);
 
   return `<style>
-body{margin:0;padding:0;overflow:hidden;touch-action:none;user-select:none;font-family:system-ui,sans-serif;background:#bae6fd}
-#wrap{position:relative;width:320px;height:480px;margin:0 auto;overflow:hidden;background:#e0f2fe}
+body{margin:0;padding:0;overflow:hidden;touch-action:none;user-select:none;font-family:system-ui,sans-serif;background:#090d16}
+#wrap{position:relative;width:320px;height:480px;margin:0 auto;overflow:hidden;background:#090d16}
 canvas{display:block;width:320px;height:480px}
-#liveTop{position:absolute;top:8px;left:0;width:100%;text-align:center;pointer-events:none;color:#0369a1;font-size:12px;font-weight:800}
-#hud{position:absolute;top:26px;left:0;width:100%;text-align:center;pointer-events:none;color:#0c4a6e;font-size:38px;font-weight:900;font-variant-numeric:tabular-nums}
-#panel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:236px;background:#ffffff;border:3px solid #0284c7;border-radius:16px;padding:16px;text-align:center;display:none}
-.row{display:flex;justify-content:space-around;margin-bottom:8px}
-.stat{font-size:11px;font-weight:800;color:#64748b}
-.val{font-size:24px;font-weight:900;color:#0f172a}
-#lbBox{background:#f0f9ff;border-radius:8px;padding:8px;margin-bottom:10px;text-align:left;font-size:12px;color:#0c4a6e}
+#liveTop{position:absolute;top:10px;left:0;width:100%;text-align:center;pointer-events:none;color:#38bdf8;font-size:11px;font-weight:800;letter-spacing:.5px}
+#hud{position:absolute;top:30px;left:0;width:100%;text-align:center;pointer-events:none;color:#f8fafc;font-size:40px;font-weight:900;font-variant-numeric:tabular-nums}
+#panel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:236px;background:#090d16;border:2px solid #38bdf8;border-radius:14px;padding:16px;text-align:center;display:none}
+.row{display:flex;justify-content:space-around;margin-bottom:10px}
+.stat{font-size:10px;font-weight:800;color:#38bdf8;letter-spacing:.5px}
+.val{font-size:24px;font-weight:900;color:#f8fafc}
+#lbBox{background:#111827;border-radius:8px;padding:8px;margin-bottom:10px;text-align:left;font-size:12px;color:#f8fafc}
 .lbr{display:flex;justify-content:space-between;padding:2px 0;font-weight:700}
-.pbtn{width:100%;padding:10px 0;font-size:13px;font-weight:900;border:none;border-radius:8px;margin-top:6px;touch-action:none}
-#subBtn{background:#f59e0b;color:#ffffff}
-#btn{background:#0ea5e9;color:#ffffff}
+.pbtn{width:100%;padding:10px 0;font-size:12px;font-weight:900;border:none;border-radius:8px;margin-top:6px;touch-action:none;letter-spacing:.4px}
+#subBtn{background:transparent;border:1.5px solid #38bdf8;color:#38bdf8}
+#btn{background:#38bdf8;color:#090d16}
 </style>
 <div id="wrap">
   <div id="liveTop">${lblTop} --</div>
@@ -54,14 +55,17 @@ const lbBox = document.getElementById('lbBox');
 const subBtn = document.getElementById('subBtn');
 const btn = document.getElementById('btn');
 
-let state = 0, frames = 0, score = 0, best = 0, groundX = 0;
+let state = 0, score = 0, best = 0, lastT = 0, spawnDist = 0, waveT = 0;
 let lb = { r: 0, top: [] };
 try { best = parseInt(localStorage.getItem('arc_fb_best')) || 0; } catch(e) {}
 
-const bird = { x: 76, y: 210, v: 0, g: 0.21, j: -4.8, r: 12 };
+const bird = { x: 78, y: 220, v: 0, g: 0.24, j: -5.1, r: 10 };
 const pipes = [];
-const clouds = [{ x: 30, y: 70, s: 24 }, { x: 160, y: 110, s: 18 }, { x: 260, y: 60, s: 22 }];
-const pipeW = 54, gap = 138, groundY = 412;
+const pipeW = 44, gap = 132, groundY = 436;
+
+function esc(s) {
+  return String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
 
 function syncLb(raw) {
   if (!raw) return;
@@ -77,19 +81,24 @@ function syncLb(raw) {
 
 function renderLbList() {
   if (!lb.top || !lb.top.length) {
-    lbBox.innerHTML = '<div style="text-align:center;color:#64748b">${lblNone}</div>';
+    lbBox.innerHTML = '<div style="text-align:center;color:#38bdf8">${lblNone}</div>';
     return;
   }
   lbBox.innerHTML = lb.top.slice(0, 5).map((item, idx) =>
-    '<div class="lbr"><span>#' + (idx + 1) + ' ' + item.n + '</span><span>' + item.s + '</span></div>'
+    '<div class="lbr"><span>#' + (idx + 1) + ' ' + esc(item.n) + '</span><span>' + item.s + '</span></div>'
   ).join('');
 }
 
 function reset() {
-  pipes.length = 0; score = 0; frames = 0;
-  bird.y = 210; bird.v = bird.j;
-  hud.textContent = '0'; hud.style.display = 'block';
-  panel.style.display = 'none'; state = 1;
+  pipes.length = 0;
+  score = 0;
+  spawnDist = 180;
+  bird.y = 220;
+  bird.v = bird.j;
+  hud.textContent = '0';
+  hud.style.display = 'block';
+  panel.style.display = 'none';
+  state = 1;
 }
 
 function flap() {
@@ -100,9 +109,7 @@ function flap() {
 document.addEventListener('pointerdown', (e) => {
   if (e.target !== btn && e.target !== subBtn) flap();
 });
-
 btn.addEventListener('pointerdown', (e) => { e.stopPropagation(); reset(); });
-
 subBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   const s = Math.max(best, score);
@@ -126,93 +133,92 @@ function gameOver() {
   panel.style.display = 'block';
 }
 
-function update() {
-  if (state !== 2) {
-    groundX = (groundX - 2) % 24;
-    for (let i = 0; i < clouds.length; i++) {
-      clouds[i].x -= 0.3;
-      if (clouds[i].x < -50) clouds[i].x = 360;
-    }
-  }
+function update(dt) {
+  waveT += 0.08 * dt;
   if (state === 0) {
-    bird.y = 210 + Math.sin(frames * 0.08) * 6;
+    bird.y = 220 + Math.sin(waveT) * 6;
     return;
   }
-  if (state === 1) {
-    bird.v += bird.g; bird.y += bird.v;
-    if (bird.y - bird.r < 0) { bird.y = bird.r; bird.v = 0; }
-    if (bird.y + bird.r >= groundY) { bird.y = groundY - bird.r; gameOver(); return; }
-    if (frames % 95 === 0) {
-      const topH = Math.floor(Math.random() * (groundY - gap - 100 + 1)) + 50;
-      pipes.push({ x: 320, top: topH, passed: false });
+  if (state !== 1) return;
+
+  bird.v += bird.g * dt;
+  bird.y += bird.v * dt;
+
+  if (bird.y - bird.r < 0) {
+    bird.y = bird.r;
+    bird.v = 0;
+  }
+  if (bird.y + bird.r >= groundY) {
+    bird.y = groundY - bird.r;
+    gameOver();
+    return;
+  }
+
+  const moveX = 2.2 * dt;
+  spawnDist += moveX;
+  if (spawnDist >= 186) {
+    spawnDist = 0;
+    const topH = Math.floor(Math.random() * (groundY - gap - 110)) + 55;
+    pipes.push({ x: 324, top: topH, passed: false });
+  }
+
+  const hr = bird.r - 1;
+  for (let i = pipes.length - 1; i >= 0; i--) {
+    const p = pipes[i];
+    p.x -= moveX;
+    if (p.x + pipeW < -10) {
+      pipes.splice(i, 1);
+      continue;
     }
-    for (let i = pipes.length - 1; i >= 0; i--) {
-      const p = pipes[i]; p.x -= 2;
-      if (p.x + pipeW < -10) { pipes.splice(i, 1); continue; }
-      const hr = bird.r - 2;
-      if (bird.x + hr > p.x && bird.x - hr < p.x + pipeW) {
-        if (bird.y - hr < p.top || bird.y + hr > p.top + gap) { gameOver(); return; }
+    if (bird.x + hr > p.x && bird.x - hr < p.x + pipeW) {
+      if (bird.y - hr < p.top || bird.y + hr > p.top + gap) {
+        gameOver();
+        return;
       }
-      if (!p.passed && p.x + pipeW < bird.x) {
-        p.passed = true; score++; hud.textContent = String(score);
-      }
+    }
+    if (!p.passed && p.x + pipeW < bird.x) {
+      p.passed = true;
+      score++;
+      hud.textContent = String(score);
     }
   }
-}
-
-function drawBird() {
-  ctx.save();
-  ctx.translate(bird.x, bird.y);
-  ctx.rotate(state === 0 ? 0 : Math.min(Math.PI / 3, Math.max(-Math.PI / 5, bird.v * 0.09)));
-  ctx.fillStyle = '#ea580c';
-  ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(-18, -5); ctx.lineTo(-16, 4); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = '#f59e0b';
-  ctx.beginPath(); ctx.arc(0, 0, bird.r, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#ef4444';
-  ctx.beginPath(); ctx.arc(-2, -12, 4, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#fde68a';
-  const wingY = (frames % 14 < 7 && state !== 2) ? 3 : -1;
-  ctx.beginPath(); ctx.ellipse(-3, wingY, 7, 4.5, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath(); ctx.arc(5, -3, 4.5, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#0f172a';
-  ctx.beginPath(); ctx.arc(6.5, -3, 2, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#ea580c';
-  ctx.beginPath(); ctx.moveTo(10, -2); ctx.lineTo(19, 2); ctx.lineTo(10, 6); ctx.closePath(); ctx.fill();
-  ctx.restore();
 }
 
 function draw() {
-  ctx.fillStyle = '#e0f2fe'; ctx.fillRect(0, 0, 320, 480);
-  ctx.fillStyle = '#ffffff';
-  for (let i = 0; i < clouds.length; i++) {
-    const c = clouds[i];
-    ctx.beginPath();
-    ctx.arc(c.x, c.y, c.s, 0, Math.PI * 2);
-    ctx.arc(c.x + c.s * 0.8, c.y + 4, c.s * 0.75, 0, Math.PI * 2);
-    ctx.arc(c.x - c.s * 0.7, c.y + 5, c.s * 0.7, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.fillStyle = '#bae6fd';
-  ctx.fillRect(0, 340, 45, 72); ctx.fillRect(50, 315, 55, 97); ctx.fillRect(110, 350, 40, 62);
-  ctx.fillRect(155, 305, 60, 107); ctx.fillRect(220, 335, 50, 77); ctx.fillRect(275, 320, 45, 92);
+  ctx.fillStyle = '#090d16';
+  ctx.fillRect(0, 0, 320, 480);
 
+  ctx.fillStyle = '#38bdf8';
   for (let i = 0; i < pipes.length; i++) {
-    const p = pipes[i], botY = p.top + gap, botH = groundY - botY;
-    ctx.fillStyle = '#10b981'; ctx.fillRect(p.x, 0, pipeW, p.top); ctx.fillRect(p.x, botY, pipeW, botH);
-    ctx.fillStyle = '#34d399'; ctx.fillRect(p.x + 6, 0, 8, p.top); ctx.fillRect(p.x + 6, botY, 8, botH);
-    ctx.fillStyle = '#059669'; ctx.fillRect(p.x - 3, p.top - 18, pipeW + 6, 18); ctx.fillRect(p.x - 3, botY, pipeW + 6, 18);
+    const p = pipes[i], botY = p.top + gap;
+    ctx.fillRect(p.x, 0, pipeW, p.top);
+    ctx.fillRect(p.x, botY, pipeW, groundY - botY);
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(p.x + 3, 0, pipeW - 6, Math.max(0, p.top - 3));
+    ctx.fillRect(p.x + 3, botY + 3, pipeW - 6, Math.max(0, groundY - botY - 3));
+    ctx.fillStyle = '#38bdf8';
   }
-  ctx.fillStyle = '#d97706'; ctx.fillRect(0, groundY, 320, 68);
-  ctx.fillStyle = '#10b981'; ctx.fillRect(0, groundY, 320, 14);
-  ctx.fillStyle = '#059669';
-  for (let x = groundX; x < 320; x += 24) ctx.fillRect(x, groundY + 4, 12, 6);
 
-  drawBird();
+  ctx.fillRect(0, groundY, 320, 2);
+
+  ctx.fillStyle = '#f8fafc';
+  ctx.beginPath();
+  ctx.arc(bird.x, bird.y, bird.r, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#38bdf8';
+  ctx.beginPath();
+  ctx.arc(bird.x + 3, bird.y - 2, 3, 0, Math.PI * 2);
+  ctx.fill();
+
   if (state === 0) {
-    ctx.fillStyle = '#0284c7'; ctx.fillRect(60, 265, 200, 40);
-    ctx.fillStyle = '#ffffff'; ctx.font = '800 16px system-ui, sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('${lblStart}', 160, 290);
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(70, 272, 180, 36);
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '800 13px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('${lblStart}', 160, 295);
   }
 }
 
@@ -221,7 +227,16 @@ if (TW) {
   if (typeof TW.watchPublicData === 'function') TW.watchPublicData();
   if (typeof TW.onEvent === 'function') TW.onEvent('publicDataChanged', () => syncLb(TW.publicData));
 }
-function loop() { frames++; update(); draw(); requestAnimationFrame(loop); }
+
+function loop(now) {
+  if (!lastT) lastT = now;
+  const dt = Math.min(2.2, Math.max(0.5, (now - lastT) / 16.667));
+  lastT = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
 requestAnimationFrame(loop);
 </script>`;
 }
+// === BATAS PERUBAHAN: tgcloud/lib/games/flappy.js ===

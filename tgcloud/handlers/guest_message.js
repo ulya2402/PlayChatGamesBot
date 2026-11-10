@@ -1,3 +1,4 @@
+// === AWAL PERUBAHAN: tgcloud/handlers/guest_message.js ===
 import { api } from 'sdk';
 import { t, fullBtn } from '../lib/locales.js';
 import { getPublicDataString } from '../lib/leaderboard.js';
@@ -8,6 +9,7 @@ import { getBrickHtml } from '../lib/games/brick.js';
 import { getOrbitHtml } from '../lib/games/orbit.js';
 import { getSolitaireHtml } from '../lib/games/solitaire.js';
 import { getPyramidHtml } from '../lib/games/pyramid.js';
+import { getCalcHtml } from '../lib/games/calc.js';
 
 export default async function (guestMessage, ctx) {
   const queryId = guestMessage.guest_query_id;
@@ -54,11 +56,15 @@ export default async function (guestMessage, ctx) {
     selectedKey = 'solitaire';
     gameTitle = t('btnSolitaire', lang);
     gameHtml = getSolitaireHtml(lang, botUsername);
+  } else if (prompt.includes('calc') || prompt.includes('kalkulator') || prompt.includes('math')) {
+    selectedKey = 'calc';
+    gameTitle = t('btnCalc', lang);
+    gameHtml = getCalcHtml(lang);
   }
 
   try {
     console.log('Attempting direct widget reply in guest mode for:', selectedKey);
-    const pubData = await getPublicDataString(selectedKey);
+    const pubData = selectedKey === 'calc' ? undefined : await getPublicDataString(selectedKey);
     await api.answerGuestQuery({
       guest_query_id: queryId,
       result: {
@@ -84,6 +90,7 @@ export default async function (guestMessage, ctx) {
     const orbitUrl = `https://t.me/${botUsername}?start=orbit`;
     const solitaireUrl = `https://t.me/${botUsername}?start=solitaire`;
     const pyramidUrl = `https://t.me/${botUsername}?start=pyramid`;
+    const calcUrl = `https://t.me/${botUsername}?start=calc`;
 
     await api.answerGuestQuery({
       guest_query_id: queryId,
@@ -115,6 +122,9 @@ export default async function (guestMessage, ctx) {
 </tg-button-row>
 <tg-button-row align="center">
   <tg-button type="url" style="primary" url="${pyramidUrl}">${fullBtn(t('launchPyramid', lang))}</tg-button>
+</tg-button-row>
+<tg-button-row align="center">
+  <tg-button type="url" style="success" url="${calcUrl}">${fullBtn(t('launchCalc', lang))}</tg-button>
 </tg-button-row>`
           }
         }
@@ -123,3 +133,4 @@ export default async function (guestMessage, ctx) {
     console.log('Rich guest card sent successfully');
   }
 }
+// === BATAS PERUBAHAN: tgcloud/handlers/guest_message.js ===

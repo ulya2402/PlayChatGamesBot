@@ -1,5 +1,6 @@
 import { t } from '../locales.js';
 
+// === AWAL PERUBAHAN: tgcloud/lib/games/pyramid.js ===
 export function getPyramidHtml(lang = 'en', botUsername = '') {
   const lblScore = t('score', lang);
   const lblBest = t('best', lang);
@@ -14,21 +15,21 @@ export function getPyramidHtml(lang = 'en', botUsername = '') {
   const lblNeed = t('pyrNeed', lang);
 
   return `<style>
-body{margin:0;padding:0;overflow:hidden;touch-action:none;user-select:none;font-family:system-ui,sans-serif;background:#451a03}
-#wrap{position:relative;width:320px;height:480px;margin:0 auto;overflow:hidden;background:#78350f}
+body{margin:0;padding:0;overflow:hidden;touch-action:none;user-select:none;font-family:system-ui,sans-serif;background:#090d16}
+#wrap{position:relative;width:320px;height:480px;margin:0 auto;overflow:hidden;background:#090d16}
 canvas{display:block;width:320px;height:480px}
-#topbar{position:absolute;top:0;left:0;width:320px;height:26px;background:#290f02;display:flex;align-items:center;justify-content:space-between;padding:0 10px;box-sizing:border-box;color:#fde68a;font-size:11px;font-weight:800;pointer-events:none}
+#topbar{position:absolute;top:0;left:0;width:320px;height:26px;background:#111827;display:flex;align-items:center;justify-content:space-between;padding:0 10px;box-sizing:border-box;color:#10b981;font-size:11px;font-weight:800;pointer-events:none}
 #bbar{position:absolute;bottom:8px;left:10px;right:10px;display:flex;gap:8px}
-.tbtn{flex:1;padding:8px 0;font-size:12px;font-weight:800;border:none;border-radius:8px;background:#b45309;color:#fffbeb;touch-action:none}
-#panel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:236px;background:#290f02;border:2px solid #f59e0b;border-radius:14px;padding:16px;text-align:center;display:none;color:#fff}
+.tbtn{flex:1;padding:8px 0;font-size:11px;font-weight:800;border:1.5px solid #10b981;border-radius:8px;background:#111827;color:#10b981;touch-action:none;letter-spacing:.3px}
+#panel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:236px;background:#090d16;border:2px solid #10b981;border-radius:14px;padding:16px;text-align:center;display:none;color:#f8fafc}
 .row{display:flex;justify-content:space-around;margin-bottom:10px}
-.stat{font-size:11px;font-weight:800;color:#fcd34d}
-.val{font-size:22px;font-weight:900;color:#fff}
-#lbBox{background:#451a03;border-radius:8px;padding:8px;margin-bottom:10px;text-align:left;font-size:12px;color:#fef3c7}
+.stat{font-size:10px;font-weight:800;color:#10b981}
+.val{font-size:22px;font-weight:900;color:#f8fafc}
+#lbBox{background:#111827;border-radius:8px;padding:8px;margin-bottom:10px;text-align:left;font-size:12px;color:#f8fafc}
 .lbr{display:flex;justify-content:space-between;padding:2px 0;font-weight:700}
-.pbtn{width:100%;padding:10px 0;font-size:13px;font-weight:900;border:none;border-radius:8px;margin-top:6px;touch-action:none}
-#subBtn{background:#f59e0b;color:#290f02}
-#btn{background:#10b981;color:#042f2e}
+.pbtn{width:100%;padding:10px 0;font-size:12px;font-weight:900;border:none;border-radius:8px;margin-top:6px;touch-action:none}
+#subBtn{background:transparent;border:1.5px solid #10b981;color:#10b981}
+#btn{background:#10b981;color:#090d16}
 </style>
 <div id="wrap">
   <div id="topbar"><span id="liveTop">${lblTop} --</span><span id="hud">${lblScore}: 0</span></div>
@@ -43,15 +44,27 @@ canvas{display:block;width:320px;height:480px}
 </div>
 <script>
 const TW = window.TelegramWidget, BOT = '${botUsername}';
-const cvs = document.getElementById('cvs'), ctx = cvs.getContext('2d');
+const cvs = document.getElementById('cvs'), ctx = cvs.getContext('2d', { alpha: false });
 const hud = document.getElementById('hud'), liveTop = document.getElementById('liveTop');
 const panel = document.getElementById('panel'), scVal = document.getElementById('scVal'), bsVal = document.getElementById('bsVal');
 const lbBox = document.getElementById('lbBox'), subBtn = document.getElementById('subBtn'), btn = document.getElementById('btn');
+
 const suits = ['♠','♥','♣','♦'], ranks = ['','A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-const cw = 38, ch = 50;
+const cw = 38, ch = 52;
 let score = 0, best = 0, sel = null, hint = '${lblGuide}', lb = { r: 0, top: [] };
 try { best = parseInt(localStorage.getItem('arc_pyr_best')) || 0; } catch(e) {}
+
 let pyr = [], stock = [], waste = [];
+
+function esc(s) {
+  return String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function renderLbList() {
+  lbBox.innerHTML = (lb.top && lb.top.length)
+    ? lb.top.slice(0, 5).map((it, i) => '<div class="lbr"><span>#' + (i + 1) + ' ' + esc(it.n) + '</span><span>' + it.s + '</span></div>').join('')
+    : '<div style="text-align:center;color:#10b981">${lblNone}</div>';
+}
 
 function syncLb(raw) {
   if (!raw) return;
@@ -60,6 +73,7 @@ function syncLb(raw) {
     if (next && next.r >= lb.r) {
       lb = next;
       liveTop.textContent = (lb.top && lb.top[0]) ? '${lblTop} ' + lb.top[0].n + ' (' + lb.top[0].s + ')' : '${lblTop} --';
+      renderLbList();
     }
   } catch(e) {}
 }
@@ -74,7 +88,8 @@ function initGame() {
     for (let c = 0; c <= r; c++) row.push(d.pop());
     pyr.push(row);
   }
-  stock = d; waste = [stock.pop()];
+  stock = d;
+  waste = [stock.pop()];
   score = 0; sel = null; hint = '${lblGuide}';
   hud.textContent = '${lblScore}: 0'; panel.style.display = 'none';
   draw();
@@ -87,7 +102,7 @@ function isFree(r, c) {
 
 function cardPos(r, c) {
   const rw = (r + 1) * cw + r * 4;
-  return { x: (320 - rw) / 2 + c * (cw + 4), y: 50 + r * 33 };
+  return { x: (320 - rw) / 2 + c * (cw + 4), y: 50 + r * 34 };
 }
 
 function getCard(ref) {
@@ -98,30 +113,35 @@ function getCard(ref) {
 }
 
 function drawCard(x, y, card, free, isSel, isMatch) {
-  ctx.fillStyle = '#290f02'; ctx.fillRect(x + 1, y + 2, cw, ch);
-  ctx.fillStyle = isSel ? '#fef08a' : (isMatch ? '#dcfce7' : (free ? '#fffbeb' : '#a8a29e'));
+  ctx.fillStyle = isSel ? '#d1fae5' : (isMatch ? '#ecfdf5' : (free ? '#f8fafc' : '#1e293b'));
   ctx.fillRect(x, y, cw, ch);
-  ctx.strokeStyle = isSel ? '#eab308' : (isMatch || (free && card.r === 13) ? '#22c55e' : (free ? '#d97706' : '#57534e'));
-  ctx.lineWidth = (isSel || isMatch || (free && card.r === 13)) ? 2.5 : 1;
-  ctx.strokeRect(x, y, cw, ch);
+  ctx.strokeStyle = isSel ? '#10b981' : (isMatch ? '#10b981' : (free ? '#cbd5e1' : '#334155'));
+  ctx.lineWidth = (isSel || isMatch) ? 2.5 : 1;
+  ctx.strokeRect(x + 0.5, y + 0.5, cw - 1, ch - 1);
 
-  ctx.fillStyle = card.c ? (free ? '#dc2626' : '#7f1d1d') : (free ? '#0f172a' : '#292524');
+  ctx.fillStyle = card.c ? (free ? '#ef4444' : '#991b1b') : (free ? '#0f172a' : '#64748b');
   ctx.font = '800 11px system-ui,sans-serif'; ctx.textAlign = 'left';
-  ctx.fillText(ranks[card.r], x + 3, y + 12);
-  ctx.font = '10px system-ui,sans-serif'; ctx.fillText(suits[card.s], x + cw - 11, y + 12);
-  ctx.font = '18px system-ui,sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText(suits[card.s], x + cw / 2, y + 29);
+  ctx.fillText(ranks[card.r], x + 4, y + 13);
+  ctx.font = '10px system-ui,sans-serif'; ctx.textAlign = 'right';
+  ctx.fillText(suits[card.s], x + cw - 3, y + 13);
+  ctx.font = '19px system-ui,sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(suits[card.s], x + cw / 2, y + 36);
+}
 
-  ctx.font = '800 9px system-ui,sans-serif';
-  ctx.fillStyle = card.r === 13 ? '#15803d' : '#78350f';
-  const valTxt = card.r === 13 ? '13★' : (card.r > 10 || card.r === 1 ? '=' + card.r : '');
-  ctx.fillText(valTxt, x + cw / 2, y + 44);
+function drawDeckBack(x, y, count) {
+  ctx.fillStyle = '#1e293b'; ctx.fillRect(x, y, cw, ch);
+  ctx.strokeStyle = '#334155'; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, cw - 1, ch - 1);
+  ctx.fillStyle = '#10b981'; ctx.font = '800 11px system-ui,sans-serif';
+  ctx.textAlign = 'center'; ctx.fillText(count > 0 ? String(count) : '↻', x + cw / 2, y + 30);
+}
+
+function drawSlot(x, y) {
+  ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 1.5; ctx.strokeRect(x + 0.5, y + 0.5, cw - 1, ch - 1);
 }
 
 function draw() {
-  ctx.fillStyle = '#78350f'; ctx.fillRect(0, 0, 320, 480);
-  ctx.fillStyle = '#290f02'; ctx.fillRect(0, 26, 320, 20);
-  ctx.fillStyle = '#fde68a'; ctx.font = '700 11px system-ui,sans-serif';
+  ctx.fillStyle = '#090d16'; ctx.fillRect(0, 0, 320, 480);
+  ctx.fillStyle = '#94a3b8'; ctx.font = '700 11px system-ui,sans-serif';
   ctx.textAlign = 'center'; ctx.fillText(hint, 160, 40);
 
   const selCard = getCard(sel);
@@ -138,24 +158,21 @@ function draw() {
     }
   }
 
-  const sy = 374;
-  ctx.strokeStyle = '#d97706'; ctx.lineWidth = 1.5;
-  ctx.strokeRect(55, sy, cw, ch);
-  ctx.fillStyle = '#fde68a'; ctx.font = '800 11px system-ui,sans-serif';
-  ctx.fillText('NEXT (' + stock.length + ')', 74, sy + 30);
+  const sy = 372;
+  drawDeckBack(68, sy, stock.length);
 
   if (stock.length) {
     const sc = stock[stock.length - 1];
-    drawCard(135, sy, sc, true, sel && sel.t === 's', sc.r === needRank);
+    drawCard(141, sy, sc, true, sel && sel.t === 's', sc.r === needRank);
   } else {
-    ctx.strokeRect(135, sy, cw, ch);
+    drawSlot(141, sy);
   }
 
   if (waste.length) {
     const wc = waste[waste.length - 1];
-    drawCard(215, sy, wc, true, sel && sel.t === 'w', wc.r === needRank);
+    drawCard(214, sy, wc, true, sel && sel.t === 'w', wc.r === needRank);
   } else {
-    ctx.strokeRect(215, sy, cw, ch);
+    drawSlot(214, sy);
   }
 }
 
@@ -175,14 +192,14 @@ function tapRef(ref) {
   if (!card) return;
   if (card.r === 13) {
     removeRef(ref); sel = null; score += 20;
-    hint = 'King (13) cleared! +20';
+    hint = 'K cleared (+20)';
     hud.textContent = '${lblScore}: ' + score;
     checkWin(); return;
   }
   if (!sel) {
     sel = ref;
     const need = 13 - card.r;
-    hint = '${lblNeed}' + ranks[need] + ' (' + card.r + '+' + need + '=13)';
+    hint = '${lblNeed}' + ranks[need];
     return;
   }
   if (sel.t === ref.t && sel.r === ref.r && sel.c === ref.c) {
@@ -191,13 +208,13 @@ function tapRef(ref) {
   const prev = getCard(sel);
   if (prev && prev.r + card.r === 13) {
     removeRef(sel); removeRef(ref); sel = null; score += 25;
-    hint = ranks[prev.r] + ' + ' + ranks[card.r] + ' = 13! +25';
+    hint = ranks[prev.r] + ' + ' + ranks[card.r] + ' (+25)';
     hud.textContent = '${lblScore}: ' + score;
     checkWin();
   } else {
     sel = ref;
     const need = 13 - card.r;
-    hint = '${lblNeed}' + ranks[need] + ' (' + card.r + '+' + need + '=13)';
+    hint = '${lblNeed}' + ranks[need];
   }
 }
 
@@ -206,19 +223,19 @@ cvs.addEventListener('pointerdown', (e) => {
   const rect = cvs.getBoundingClientRect();
   const x = (e.clientX - rect.left) * (320 / (rect.width || 320));
   const y = (e.clientY - rect.top) * (480 / (rect.height || 480));
-  const sy = 374;
+  const sy = 372;
 
   if (y >= sy && y <= sy + ch) {
-    if (x >= 55 && x <= 55 + cw) {
+    if (x >= 68 && x <= 68 + cw) {
       sel = null;
       if (stock.length) waste.push(stock.pop());
       else while (waste.length) stock.push(waste.pop());
       hint = '${lblGuide}'; draw(); return;
     }
-    if (x >= 135 && x <= 135 + cw && stock.length) {
+    if (x >= 141 && x <= 141 + cw && stock.length) {
       tapRef({ t: 's', r: -1, c: -1 }); draw(); return;
     }
-    if (x >= 215 && x <= 215 + cw && waste.length) {
+    if (x >= 214 && x <= 214 + cw && waste.length) {
       tapRef({ t: 'w', r: -1, c: -1 }); draw(); return;
     }
   }
@@ -239,9 +256,7 @@ function showEnd() {
   if (score > best) { best = score; try { localStorage.setItem('arc_pyr_best', String(best)); } catch(e) {} }
   scVal.textContent = String(score); bsVal.textContent = String(best);
   subBtn.textContent = '${lblSubmit}';
-  lbBox.innerHTML = (lb.top && lb.top.length)
-    ? lb.top.slice(0, 5).map((it, i) => '<div class="lbr"><span>#' + (i + 1) + ' ' + it.n + '</span><span>' + it.s + '</span></div>').join('')
-    : '<div style="text-align:center;color:#fcd34d">${lblNone}</div>';
+  renderLbList();
   panel.style.display = 'block';
 }
 
@@ -264,3 +279,4 @@ if (TW) {
 initGame();
 </script>`;
 }
+// === BATAS PERUBAHAN: tgcloud/lib/games/pyramid.js ===

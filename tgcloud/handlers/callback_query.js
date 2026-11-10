@@ -1,3 +1,4 @@
+// === AWAL PERUBAHAN: tgcloud/handlers/callback_query.js ===
 import { api } from 'sdk';
 import { t } from '../lib/locales.js';
 import { getPublicDataString, saveWidgetRef } from '../lib/leaderboard.js';
@@ -8,6 +9,7 @@ import { getBrickHtml } from '../lib/games/brick.js';
 import { getOrbitHtml } from '../lib/games/orbit.js';
 import { getSolitaireHtml } from '../lib/games/solitaire.js';
 import { getPyramidHtml } from '../lib/games/pyramid.js';
+import { getCalcHtml } from '../lib/games/calc.js';
 
 async function sendSharedGameWidget(chatId, gameKey, html, caption) {
   const pubData = await getPublicDataString(gameKey);
@@ -51,5 +53,15 @@ export default async function (callbackQuery, ctx) {
     await sendSharedGameWidget(chatId, 'solitaire', getSolitaireHtml(lang, botUsername), t('btnSolitaire', lang));
   } else if (data === 'play_pyramid') {
     await sendSharedGameWidget(chatId, 'pyramid', getPyramidHtml(lang, botUsername), t('btnPyramid', lang));
+  } else if (data === 'play_calc') {
+    await api.sendWidget({
+      chat_id: chatId,
+      html: getCalcHtml(lang),
+      width: 320,
+      height: 480,
+      caption: t('btnCalc', lang),
+      is_shared: true
+    });
   }
 }
+// === BATAS PERUBAHAN: tgcloud/handlers/callback_query.js ===

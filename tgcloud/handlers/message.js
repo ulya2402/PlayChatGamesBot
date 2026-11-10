@@ -1,3 +1,4 @@
+// === AWAL PERUBAHAN: tgcloud/handlers/message.js ===
 import { api } from 'sdk';
 import { t, fullBtn } from '../lib/locales.js';
 import { getPublicDataString, saveWidgetRef, saveScoreAndSyncWidget } from '../lib/leaderboard.js';
@@ -8,6 +9,7 @@ import { getBrickHtml } from '../lib/games/brick.js';
 import { getOrbitHtml } from '../lib/games/orbit.js';
 import { getSolitaireHtml } from '../lib/games/solitaire.js';
 import { getPyramidHtml } from '../lib/games/pyramid.js';
+import { getCalcHtml } from '../lib/games/calc.js';
 
 async function launchGameWidget(chatId, gameKey, html, caption) {
   const pubData = await getPublicDataString(gameKey);
@@ -77,6 +79,17 @@ export default async function (message, ctx) {
       await launchGameWidget(chatId, 'pyramid', getPyramidHtml(lang, botUsername), t('btnPyramid', lang));
       return;
     }
+    if (payload === 'calc') {
+      await api.sendWidget({
+        chat_id: chatId,
+        html: getCalcHtml(lang),
+        width: 320,
+        height: 480,
+        caption: t('btnCalc', lang),
+        is_shared: true
+      });
+      return;
+    }
 
     console.log('Sending localized full-width rich welcome menu to chat', chatId);
     await api.sendRichMessage({
@@ -105,13 +118,17 @@ export default async function (message, ctx) {
 <tg-button-row align="center">
   <tg-button type="callback_data" style="primary" data="play_pyramid">${fullBtn(t('btnPyramid', lang))}</tg-button>
 </tg-button-row>
-<hr/>
-<p>${t('guestHint', lang)} <code>@${botUsername} pyramid</code></p>
 <tg-button-row align="center">
-  <tg-button type="copy_text" text="@${botUsername} pyramid">${fullBtn(`📋 Copy @${botUsername} pyramid`)}</tg-button>
+  <tg-button type="callback_data" style="success" data="play_calc">${fullBtn(t('btnCalc', lang))}</tg-button>
+</tg-button-row>
+<hr/>
+<p>${t('guestHint', lang)} <code>@${botUsername}</code></p>
+<tg-button-row align="center">
+  <tg-button type="copy_text" text="@${botUsername}">${fullBtn(`📋 Copy @${botUsername}`)}</tg-button>
 </tg-button-row>`,
         skip_entity_detection: false
       }
     });
   }
 }
+// === BATAS PERUBAHAN: tgcloud/handlers/message.js ===
