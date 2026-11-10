@@ -1,2 +1,8 @@
-.tgcloud/
 node_modules/
+.tgcloud/
+dist/
+.env
+.env.*
+*.log
+.DS_Store
+Thumbs.db
